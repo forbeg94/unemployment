@@ -31,6 +31,7 @@ end)
 
 game.ChildAdded:Connect(function(a)
     if a == mainui:FindFirstChild('DigMinigame') then
+        mainui.DigMinigame.Cursor.Visible = false
         mainui.DigMinigame.Cursor.Position.Changed:Connect(function()
             mainui.DigMinigame.Cursor.Position = mainui.DigMinigame.Area.Position
         end)
