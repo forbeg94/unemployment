@@ -89,11 +89,11 @@ local function testhookmetamthd()
 
 		local oldname
 
-		oldname = hookmetamethod(game, '__index', function(self, jew)
-			if self == newvalue and jew == 'Name' then
+		oldname = hookmetamethod(game, '__index', function(self, ass)
+			if self == newvalue and ass == 'Name' then
 				return 'W'
 			end
-			return oldname(self, jew)
+			return oldname(self, ass)
 		end)
 		newvalue.Name = 'S'
 		table.insert(result, newvalue.Name)
