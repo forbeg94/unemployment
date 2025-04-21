@@ -83,7 +83,7 @@ local function testhookmetamthd()
 	local success, failure = pcall(function()
 
 		local newvalue = Instance.new('IntValue', game)
-		newvalue.Name = 'Haha'
+		newvalue.Name = 'S'
 
 		value = newvalue
 
@@ -95,7 +95,7 @@ local function testhookmetamthd()
 			end
 			return oldname(self, jew)
 		end)
-
+		newvalue.Name = 'S'
 		table.insert(result, newvalue.Name)
 
 		newvalue:Destroy()
