@@ -1,12 +1,16 @@
-warn('Loaded PMunc u2.01')
+warn('Loaded PMunc u2.02')
 
 print("Executor's identity:", identifyexecutor())
 
-local function test(name, success, what)
+local howmanytests, failed, succeeded = 0, 0, 0
 
+local function test(name, success, what)
+    howmanytests += 1
     if what == nil then
+        succeeded += 1
         print('🟢', name)
     else
+        failed += 1
         warn('🔴', name, what)
     end
 
@@ -120,3 +124,5 @@ test('getgc', pcall(function()
 
 	assert(checkresult(result, {true, true}), "Result did not meet expectations.")
 end))
+local endingresults = (howmanytests - failed)/succeeded
+print('ℹ️',succeeded, 'Out of', howmanytests, 'Tests were successful! Your PMunc:', endingresults * 100 ..'%')
