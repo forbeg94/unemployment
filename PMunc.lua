@@ -65,11 +65,11 @@ test('hookmetamethod', pcall(function()
 
 	local oldname
 
-	oldname = hookmetamethod(game, '__index', function(self, ass)
-		if self == newvalue and ass == 'Name' then
+	oldname = hookmetamethod(game, '__index', function(self, key)
+		if self == newvalue and key == 'Name' then
 			return 'W'
 		end
-		return oldname(self, ass)
+		return oldname(self, key)
 	end)
 
 	assert(newvalue.Name == 'W', 'Failed to spoof value.')
