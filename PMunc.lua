@@ -109,7 +109,7 @@ test('getgc', pcall(function()
 		if val == func() then
 			table.insert(result, true)
 		end
-		assert(value ~= rt, "Shouldn't return tables if true wasnt passed trough it, though it did..")
+		assert(value ~= rt, "Shouldn't return tables if true wasnt passed trough it.") -- shouldn't return because yes
 	end
 
 	for _, val in pairs(getgc(true)) do
