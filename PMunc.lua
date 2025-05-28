@@ -124,5 +124,5 @@ test('getgc', pcall(function()
 
 	assert(checkresult(result, {true, true}), "Result did not meet expectations.")
 end))
-local endingresults = (howmanytests - failed)/succeeded
+local endingresults = (howmanytests - failed)/howmanytests
 print('ℹ️',succeeded, 'Out of', howmanytests, 'Tests were successful! Your PMunc:', endingresults * 100 ..'%')
