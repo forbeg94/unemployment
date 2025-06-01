@@ -11,7 +11,11 @@ local function test(name, success, what)
         print('🟢', name)
     else
         failed += 1
-        warn('🔴', name, what)
+		if not getgenv()[name] then
+			warn('🔴', name, 'Missing function.')
+		else
+        	warn('🔴', name, what)
+		end
     end
 
 end
@@ -29,12 +33,29 @@ end
 test('newcclosure', pcall(function()
     local result = {}
 
-    newcclosure(function()
+    local a = newcclosure(function()
 		table.insert(result, 1)
         task.wait(1) -- should be able to yield (thx sunc)
 		table.insert(result, 2)
     end)
-    assert(checkresult(result, {1, 2}), "Unexpected result.") -- this SHOULDN'T fail at all, well except if ur exec is shit
+	assert(debug.getinfo(a).what == 'C', 'The function is not a C closure')
+    assert(checkresult(result, {1, 2}), "Unexpected result.")
+end))
+
+test('iscclosure', pcall(function()
+    assert(newcclosure, 'Missing newcclosure.')
+    
+    local acc = false
+
+    local function a() end
+
+    local ccfunction = newcclosure(a)
+
+    if debug.getinfo(ccfunction).what == 'C' then
+        acc = true
+    end
+
+    assert(acc == iscclosure(ccfunction), 'Failed to check if function is a C closure')
 end))
 
 test('hookfunction', pcall(function()
@@ -124,5 +145,20 @@ test('getgc', pcall(function()
 
 	assert(checkresult(result, {true, true}), "Result did not meet expectations.")
 end))
+
+test('firesignal', pcall(function()
+    local txtbutton = Instance.new('TextButton')
+    local fired = false
+    local conncetion = txtbutton.MouseEnter:Connect(function(x, c)
+		if x == 1 and c == 2 then
+        	fired = true
+		end
+    end)
+    firesignal(txtbutton.MouseEnter, 1, 2)
+    assert(fired == true, 'Failed to fire signal')
+	txtbutton:Destroy()
+	conncetion:Disconnect()
+end))
+
 local endingresults = (howmanytests - failed)/howmanytests
 print('ℹ️',succeeded, 'Out of', howmanytests, 'Tests were successful! Your PMunc:', endingresults * 100 ..'%')
