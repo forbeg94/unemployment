@@ -1,4 +1,4 @@
-warn('Loaded PMunc u2.1')
+warn('Loaded PMunc u2.02')
 
 print("Executor's identity:", identifyexecutor())
 
@@ -35,10 +35,10 @@ test('newcclosure', pcall(function()
 
     local a = newcclosure(function()
 		table.insert(result, 1)
-        task.wait(1) -- should be able to yield (thx sunc)
+        task.wait(1)
 		table.insert(result, 2)
     end)
-	assert(debug.getinfo(a).what == 'C', 'The function is not a C closure')
+	assert(debug.info(a, 's') == '[C]', 'The function is not a C closure')
     assert(checkresult(result, {1, 2}), "Unexpected result.")
 end))
 
@@ -51,7 +51,7 @@ test('iscclosure', pcall(function()
 
     local ccfunction = newcclosure(a)
 
-    if debug.getinfo(ccfunction).what == 'C' then
+    if debug.info(ccfunction, 's') == '[C]' then
         acc = true
     end
 
@@ -161,4 +161,4 @@ test('firesignal', pcall(function()
 end))
 
 local endingresults = (howmanytests - failed)/howmanytests
-print('ℹ️',succeeded, 'Out of', howmanytests, 'Tests were successful! Your PMunc:', endingresults * 100 ..'%')
+print('ℹ️',succeeded, 'Out of', howmanytests, 'Tests were successful! Your PMunc:', math.round(endingresults * 100) ..'%')
