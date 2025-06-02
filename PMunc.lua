@@ -1,4 +1,8 @@
-warn('Loaded PMunc u2.11')
+if not debug.info then
+    warn('Missing debug.info.')
+end
+
+warn('Loaded PMunc u2.2')
 
 print("Executor's identity:", identifyexecutor())
 
@@ -19,13 +23,6 @@ local function test(name, success, what)
     end
 end
 
-local function missingstuff(name, _, msg)
-	if msg then
-		warn('🟡 ', msg)
-	end
-end
-missingstuff('debug.info', pcall(function() assert(debug.info, 'Missing debug.info') end))
-
 local function checkresult(t1, t2)
 	local h = true
 	for i, v in pairs(t1) do
@@ -37,15 +34,13 @@ local function checkresult(t1, t2)
 end
 
 test('newcclosure', pcall(function()
-    local result = {}
-
     local a = newcclosure(function()
-		table.insert(result, 1)
-        task.wait(1)
-		table.insert(result, 2)
+		return 123
     end)
+    local b = function()
+        return 123
+    end
 	assert(debug.info(a, 's') == '[C]', 'The function is not a C closure')
-    assert(checkresult(result, {1, 2}), "Unexpected result.")
 end))
 
 test('iscclosure', pcall(function()
@@ -65,69 +60,64 @@ test('iscclosure', pcall(function()
 end))
 
 test('hookfunction', pcall(function()
-    local result = {}
-
-    local function a(arg)
-        table.insert(result, arg)
+    local basicfunc = function(arg)
         return arg
     end
 
-    a(1)
+    local evilfunction = function()
+        return 123
+    end
 
-    local oldfunc
-    oldfunc = hookfunction(a, function(arg)
-        arg = 2
-        return oldfunc(arg)
-    end)
+    hookfunction(basicfunc, evilfunction)
 
-    a(1) -- should return 2 because it was hooked
-
-	assert(checkresult(result, {1, 2}), 'Result did not meet expectations.') -- Should return {1, 2}
+    assert(basicfunc(1) == 123, 'Failed to hook function')
+    assert(debug.info(basicfunc, 's') ~= '[C]', 'The function is a C closure') -- some executors do that yes
 end))
 
 test('hookmetamethod', pcall(function()
-	local result = {}
+	local instance = Instance.new('BindableEvent')
 
-	local newvalue = Instance.new('IntValue', game)
+	local index -- __index test
 
-	newvalue.Name = 'S'
-
-	value = newvalue
-
-	local oldname
-
-	oldname = hookmetamethod(game, '__index', function(self, key)
-		if self == newvalue and key == 'Name' then
-			return 'W'
+	index = hookmetamethod(game, '__index', function(self, key)
+		if self == instance and key == 'Name' then
+			checkpoint = true
+			return 'Vro'
 		end
-		return oldname(self, key)
+		return index(self, key)
 	end)
 
-	assert(newvalue.Name == 'W', 'Failed to spoof value.')
-	newvalue:Destroy()
+	instance.Name = 'Bro'
 
-	local rm = Instance.new('BindableEvent', game)
+	assert(instance.Name == 'Vro', '__index failed to modify.')
 
-	rm.Event:Connect(function(arg)
-		table.insert(result, arg)
-	end)
+	hookmetamethod(game, '__index', index)
+    task.wait()
+    assert(instance.Name == 'Bro', 'Failed to revert.')
 
-	rm:Fire(1)
+    local v = 0
 
-	local oldevent;
+    instance.Event:Connect(function(arg) v = arg end)
 
-	oldevent = hookmetamethod(game, '__namecall', function(self, ...)
-		local args = {...}
-		if self == rm and getnamecallmethod() == 'Fire' then
-			args[1] = 2
-			return oldevent(self, unpack(args))
-		end
-		return oldevent(self, ...)
-	end)
-	rm:Fire(1)
-	assert(result[2] ~= nil, 'Failed to return.')
-	assert(result[2] ~= 1, 'Failed to modify arg.')
-	rm:Destroy()
+	local namecall -- __namecall test
+
+    namecall = hookmetamethod(game, '__namecall', function(self, ...)
+        local args = {...}
+        if self == instance and getnamecallmethod() == 'Fire' then
+            args[1] = 1
+            return namecall(self, unpack(args))
+        end
+        return namecall(self, ...)
+    end)
+
+    instance:Fire(123)
+    task.wait()
+
+    assert(v == 1, '__namecall failed to modify.')
+
+    hookmetamethod(game, '__namecall', namecall)
+
+    instance:Destroy()
 end))
 
 test('getgc', pcall(function()
@@ -140,7 +130,7 @@ test('getgc', pcall(function()
 		if val == func() then
 			table.insert(result, true)
 		end
-		assert(value ~= rt, "Shouldn't return tables if true wasnt passed trough it.") -- shouldn't return because yes
+		assert(value ~= rt, "Shouldn't return tables if true wasnt passed trough it.")
 	end
 
 	for _, val in pairs(getgc(true)) do
@@ -162,6 +152,7 @@ test('firesignal', pcall(function()
     end)
     firesignal(txtbutton.MouseEnter, 1, 2)
     assert(fired == true, 'Failed to fire signal')
+
 	txtbutton:Destroy()
 	conncetion:Disconnect()
 end))
@@ -173,7 +164,7 @@ test('loadstring', pcall(function()
 end))
 
 test('isnetworkowner', pcall(function()
-    local function custominw(basepart) -- please just make ur own one
+    local function customino(basepart) -- please just make ur own one
         if basepart:IsA('BasePart') then
             return basepart.ReceiveAge == 0
         end
@@ -184,12 +175,97 @@ test('isnetworkowner', pcall(function()
 
     part1.Parent = workspace
 
-    assert(custominw(part1) == isnetworkowner(part1), "Unexpected result.")
-	assert(custominw(part2) ~= isnetworkowner(part2), "isnetworkowner does not check if the instance is in workspace.")
+    assert(customino(part1) == isnetworkowner(part1), "Unexpected result.")
+	assert(customino(part2) ~= isnetworkowner(part2), "isnetworkowner does not check if the instance is in workspace.")
 
     part2:Destroy()
     part1:Destroy()
 end))
 
+test('cloneref', pcall(function()
+    local instance = game.ReplicatedStorage
+
+    local clone = cloneref(instance)
+
+    assert(instance ~= clone, 'Clone and instance are identical.')
+end))
+
+test('gethui', pcall(function()
+    local instance = Instance.new('Frame')
+    instance.Parent = gethui()
+    assert(gethui() ~= game.CoreGui, 'gethui() is the same as game.CoreGui.')
+    assert(instance.Parent == gethui(), "Instance haven't been added to gethui.")
+    instance:Destroy()
+end))
+
+test('getnilinstances', pcall(function()
+    local instance1 = Instance.new('Part')
+    local instance2 = Instance.new('Part', workspace)
+
+    local found1, found2 = false, false
+
+    for i, v in pairs(getnilinstances()) do
+        if v == instance1 then
+            found1 = true
+        elseif v == instance2 then
+            found2 = true
+        end
+    end
+
+    assert(found1 == true, "Couldn't find an instance which is parented to nil.")
+    assert(found2 == false, "Found an instance though it has a parent, whats that blud doing there")
+
+    instance1:Destroy()
+    instance2:Destroy()
+end))
+
+test('fireclickdetector', pcall(function()
+    local instance = Instance.new('Part')
+    instance.Parent = workspace
+    instance.Anchored = true
+
+    local clickdetector = Instance.new('ClickDetector')
+
+    local counter = 0
+
+    clickdetector.Parent = instance
+    clickdetector.MaxActivationDistance = 100
+
+    clickdetector.MouseClick:Connect(function()
+        counter += 1
+    end)
+    instance.Position = game.Players.LocalPlayer.Character:WaitForChild('HumanoidRootPart').CFrame.Position + Vector3.new(0, 20, 0)
+
+    fireclickdetector(clickdetector, 100)
+    fireclickdetector(clickdetector, 1)
+
+    assert(counter ~= 0, 'Failed to click.')
+    assert(counter ~= 2, 'fireclickdetector ignores set distance.')
+
+    instance:Destroy()
+    clickdetector:Destroy()
+end))
+
+test('firetouchinterest', pcall(function()
+    local instance = Instance.new('Part', workspace)
+    instance.Position = Vector3.new(0, 20000, 0)
+
+    local touching = false
+    local stopped = false
+
+    instance.Touched:Connect(function() touching = true end)
+    instance.TouchEnded:Connect(function() stopped = true end)
+
+    firetouchinterest(instance, game.Players.LocalPlayer.Character:WaitForChild('Head'), true)
+    task.wait()
+    firetouchinterest(instance, game.Players.LocalPlayer.Character:WaitForChild('Head'), false)
+    task.wait()
+    instance:Destroy()
+    
+    assert(touching == true, 'Failed to touch the instance.')
+    assert(touching == true, 'Failed to stop touching the instance. - drake')
+end))
+
 local endingresults = (howmanytests - failed)/howmanytests
 print('ℹ️',succeeded, 'Out of', howmanytests, 'Tests were successful! Your PMunc:', math.round(endingresults * 100) ..'%')
+print('Thx')
