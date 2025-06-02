@@ -1,4 +1,4 @@
-warn('Loaded PMunc u2.02')
+warn('Loaded PMunc u2.11')
 
 print("Executor's identity:", identifyexecutor())
 
@@ -17,8 +17,14 @@ local function test(name, success, what)
         	warn('🔴', name, what)
 		end
     end
-
 end
+
+local function missingstuff(name, _, msg)
+	if msg then
+		warn('🟡 ', msg)
+	end
+end
+missingstuff('debug.info', pcall(function() assert(debug.info, 'Missing debug.info') end))
 
 local function checkresult(t1, t2)
 	local h = true
@@ -158,6 +164,31 @@ test('firesignal', pcall(function()
     assert(fired == true, 'Failed to fire signal')
 	txtbutton:Destroy()
 	conncetion:Disconnect()
+end))
+
+test('loadstring', pcall(function()
+	local a = loadstring('return 2')
+	local _, res = pcall(a)
+	assert(res == 2, 'Failed to use loadstring')
+end))
+
+test('isnetworkowner', pcall(function()
+    local function custominw(basepart) -- please just make ur own one
+        if basepart:IsA('BasePart') then
+            return basepart.ReceiveAge == 0
+        end
+    end
+
+    local part1 = Instance.new('Part')
+    local part2 = Instance.new('Part')
+
+    part1.Parent = workspace
+
+    assert(custominw(part1) == isnetworkowner(part1), "Unexpected result.")
+	assert(custominw(part2) ~= isnetworkowner(part2), "isnetworkowner does not check if the instance is in workspace.")
+
+    part2:Destroy()
+    part1:Destroy()
 end))
 
 local endingresults = (howmanytests - failed)/howmanytests
